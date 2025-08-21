@@ -1,77 +1,18 @@
-Python 语法要点
-📝 语句与分号规则
-基本规则
-单条语句：分号 ; 可选
+# Python 语法要点详解
 
-多条语句：必须使用分号分隔
+## 📝 语句与分号规则
 
-代码示例
-python
+### 基本规则
+- **单条语句**：语句末尾的分号 `;` 是可选的，可以省略
+- **多条语句**：如果在一行中编写多条语句，必须使用分号 `;` 进行分隔
+
+### 代码示例
+```python
 # 单条语句（无分号）
 print("hello")
 
 # 单条语句（有分号）
 print("world");
 
-# 一行多条语句
+# 一行多条语句（必须用分号分隔）
 print("hello"); print("world")
-🔑 关键字查询
-使用方法
-Python 标准库提供 keyword 模块来查看所有关键字
-
-代码示例
-python
-import keyword
-
-# 查看所有关键字列表
-print("Python 关键字列表:")
-print(keyword.kwlist)
-
-# 查看关键字数量
-print(f"\n总关键字数量: {len(keyword.kwlist)}")
-🖨️ 格式化输出
-占位符对照表
-占位符	说明	示例
-%s	字符串	"hello"
-%d	有符号十进制整数	123
-%u	无符号十进制整数	456
-%o	无符号八进制整数	0o777
-%x	十六进制整数（小写）	0xff
-%X	十六进制整数（大写）	0xFF
-%f	浮点数	3.14
-%e	科学计数法（小写）	1.23e+10
-%E	科学计数法（大写）	1.23E+10
-%g	自动选择格式	3.14 或 1.2e+10
-使用示例
-python
-name = "Alice"
-age = 25
-height = 1.68
-
-# 基本格式化
-print("姓名: %s, 年龄: %d, 身高: %.2f" % (name, age, height))
-
-# 数字格式化
-number = 123.456789
-print("浮点数: %.3f" % number)        # 保留3位小数
-print("科学计数: %.2e" % number)      # 科学计数法
-⏎ 输出换行控制
-参数说明
-默认行为：print() 输出后自动换行
-
-禁止换行：使用 end="" 参数
-
-代码示例
-python
-# 默认换行输出
-print("第一行")
-print("第二行")
-
-# 不换行输出
-print("hello", end="")
-print("world", end="")  # 输出: helloworld
-
-# 自定义结束符
-print("Python", end=" | ")
-print("Java", end=" | ")
-print("C++")  # 输出: Python | Java | C++

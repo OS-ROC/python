@@ -1,3 +1,4 @@
-# <center>以此自勉</center>
-## no end for learning
-## a lost chance never return
+ # <p align="center"> <strong> Keep Moving</strong><br> </p>
+
+## No end for learning
+## A lost chance never return

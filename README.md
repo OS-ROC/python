@@ -2,3 +2,4 @@
 
 ## No end for learning
 ## A lost chance never return
+## No pain，no gain

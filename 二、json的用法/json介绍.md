@@ -21,3 +21,5 @@ JSON（JavaScript Object Notation, JS对象简谱）是一种轻量级的数据�
 
 - `json.dumps()`：对数据进行编码
 - `json.loads()`：对数据
+
+![alt text](9ab9367153ee84b66b8bf99ff08d0710-1.png)

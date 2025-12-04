@@ -1,5 +1,5 @@
 """
-面向对象，数据分析案例，主业务逻辑代码
+面向对象，sql，主业务逻辑代码
 实现步骤：
 1、设计一个类，可以完成数据的封装
 2、设计一个抽象类，定义文件读取的相关功能，并使用子类实现具体功能
@@ -21,18 +21,17 @@ jan_data: list[Record] = text_file_reader.read_data()
 feb_data: list[Record] = json_file_reader.read_data()
 # 将两个月的数据合并为一个list来存储
 all_data: list[Record] = jan_data + feb_data
-print(type(all_data))
-
+# print(type(all_data))
 # 开始进行数据计算
 # {"2011-01-01": 1534,"2011-01-02": 300,"2011-01-03": 650}
 data_dict = dict()
 for record in all_data:
-    if record.data in data_dict.keys():
+    if record.date in data_dict.keys():
         # 当前日期已经有记录了，所以和老记录做累加即可
-        data_dict[record.data] +=  record.money
+        data_dict[record.date] +=  record.money
     else:
-        data_dict[record.data] = record.money
-print(data_dict)
+        data_dict[record.date] = record.money
+# print(data_dict)
 
 
 # 可视化图表开发

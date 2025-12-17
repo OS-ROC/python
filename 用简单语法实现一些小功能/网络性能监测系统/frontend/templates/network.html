@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* 折线图页面专用背景 */
+body {
+    background-image: url('https://images.unsplash.com/photo-1762199715541-a42f25f48ecf?q=80&w=1475&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+/* 菜单栏半透明背景，保证文字可读 */
+.navbar {
+    background-color: rgba(0,0,0,0.0) !important;
+}
+
+/* 菜单栏文字颜色 */
+.navbar .nav-link,
+.navbar .navbar-brand {
+    color: #ffffff !important;
+}
+
+/* 折线图内容容器半透明 */
+.content-wrapper {
+    background-color: rgba(255,255,255,0.7);
+    padding: 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+}
+</style>
+
+
+<div class="content-wrapper">
+<h1 align="center">网络性能折线图 - {{ metric == 'latency' and '网络延迟' or metric == 'packetloss' and '丢包率' or 'HTTP响应时间' }}</h1>
+
+<div class="row mb-4" id="latestDataContainer">
+    <!-- 每个 IP 最近10条数据平均值小模块会动态生成 -->
+</div>
+
+<canvas id="chartCanvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const HOSTS = {{ hosts | tojson }};
+const METRIC = "{{ metric }}";
+
+// 为每个 host 固定颜色
+const HOST_COLORS = {};
+const COLORS = ["#4e73df","#1cc88a","#36b9cc","#f6c23e","#e74a3b","#858796"];
+HOSTS.forEach((h,i)=> HOST_COLORS[h]=COLORS[i % COLORS.length]);
+
+function sanitizeId(str) {
+    return str.replace(/[^a-zA-Z0-9]/g,'_');
+}
+
+// 小模块生成（显示最近10条数据的平均值）
+function updateLatestModules(dataByHost){
+    const container = document.getElementById("latestDataContainer");
+    container.innerHTML = "";
+    HOSTS.forEach(h=>{
+        let values = [];
+        let displayValue = "N/A";
+
+        if(METRIC === "latency") values = dataByHost[h]["latency_ms"];
+        else if(METRIC === "packetloss") values = dataByHost[h]["packet_loss_percent"];
+        else if(METRIC === "http") values = dataByHost[h]["http"];
+
+        if(values.length){
+            const recent = values.slice(-10); // 最近10条
+            const sum = recent.reduce((acc,v)=>acc + (v || 0),0); // None/null当0
+            const avg = (sum / recent.length).toFixed(2);
+            displayValue = METRIC === "packetloss" ? avg + " %" : avg + " ms";
+        }
+
+        const card = document.createElement("div");
+        card.className = "col-md-3 mb-2";
+        card.innerHTML = `
+            <div class="card shadow-sm" style="
+                background-color: ${HOST_COLORS[h]}55;  /* IP颜色+半透明 */
+                border:none;
+                color:#fff;
+                border-radius: 15px;
+                backdrop-filter: blur(8px); /* 背景轻微模糊 */
+                box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+                transition: transform 0.3s;
+            ">
+                <div class="card-body text-center">
+                    <h5 class="card-title">${h}</h5>
+                    <p class="card-text">${displayValue}</p>
+                </div>
+            </div>`;
+        container.appendChild(card);
+    });
+}
+
+
+let chart;
+
+function fetchNetworkData(){
+    fetch("/api/network_metrics")
+    .then(res=>res.json())
+    .then(dataByHost=>{
+        updateLatestModules(dataByHost);
+
+        const datasets = HOSTS.map(h=>{
+            let yData;
+            if(METRIC==="latency") yData = dataByHost[h]["latency_ms"];
+            else if(METRIC==="packetloss") yData = dataByHost[h]["packet_loss_percent"];
+            else yData = dataByHost[h]["http"];
+            return {label:h, data:yData, borderColor:HOST_COLORS[h], fill:false, tension:0.2};
+        });
+
+        const labels = dataByHost[HOSTS[0]]["created_at"];
+
+        if(!chart){
+            chart = new Chart(document.getElementById("chartCanvas").getContext("2d"),{
+                type:"line",
+                data:{labels:labels,datasets:datasets},
+                options:{
+                    responsive:true,
+                    plugins:{
+                        title:{
+                            display:true,
+                            text: METRIC==="latency"?"网络延迟(ms)":METRIC==="packetloss"?"丢包率(%)":"HTTP响应时间(ms)"
+                        },
+                        legend:{position:'bottom'}
+                    },
+                    scales:{
+                        y:{beginAtZero:true}
+                    }
+                }
+            });
+        } else {
+            chart.data.labels = labels;
+            chart.data.datasets = datasets;
+            chart.options.plugins.title.text = METRIC==="latency"?"网络延迟(ms)":METRIC==="packetloss"?"丢包率(%)":"HTTP响应时间(ms)";
+            chart.update();
+        }
+    });
+}
+
+// 初次加载 + 每10秒刷新
+fetchNetworkData();
+setInterval(fetchNetworkData,10000);
+</script>
+{% endblock %}
+
+</div>

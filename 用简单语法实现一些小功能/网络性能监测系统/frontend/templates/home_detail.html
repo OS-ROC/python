@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* 整个页面背景图 */
+html, body {
+    background-image: url('https://images.unsplash.com/photo-1762199715541-a42f25f48ecf?q=80&w=1475&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* 内容容器悬浮在背景上 */
+.content-wrapper {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 20px;
+    border-radius: 12px;
+    background-color: rgba(255,255,255,0.4); /* 半透明 */
+    backdrop-filter: blur(8px);
+    color: #000;
+}
+
+.card-stat {
+    margin-top: 15px;
+    font-size: 16px;
+}
+</style>
+
+<div class="content-wrapper text-center">
+    <h2 class="mb-4">
+        {% if metric == 'memory' %}内存使用详情{% elif metric == 'disk' %}磁盘使用详情{% else %}流量使用详情{% endif %}
+    </h2>
+
+    <canvas id="detailChart" style="max-height:300px;"></canvas>
+
+    <div id="extraInfo" class="mt-4"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const metric = "{{ metric }}";
+let detailChart;
+
+function updateDetailChart() {
+    fetch("/api/home_metrics")
+    .then(res => res.json())
+    .then(data => {
+        const ctx = document.getElementById("detailChart").getContext("2d");
+        let chartData = {};
+        let extraHtml = "";
+
+        if(metric === "memory") {
+            chartData = {
+                labels: ["已用", "剩余"],
+                datasets: [{data: [data.memory_percent, 100 - data.memory_percent], backgroundColor: ["#4e73df","#eaeaea"]}]
+            };
+            extraHtml = `
+                <div class="card-stat">已用: ${data.memory_used} MB</div>
+                <div class="card-stat">总内存: ${data.memory_total} MB</div>
+                <div class="card-stat">平均使用率: ${data.memory_percent}%</div>
+            `;
+        } else if(metric === "disk") {
+            chartData = {
+                labels: ["已用", "剩余"],
+                datasets: [{data: [data.disk_percent, 100 - data.disk_percent], backgroundColor: ["#1cc88a","#eaeaea"]}]
+            };
+            extraHtml = `
+                <div class="card-stat">已用: ${data.disk_used} GB</div>
+                <div class="card-stat">总容量: ${data.disk_total} GB</div>
+                <div class="card-stat">剩余容量: ${(data.disk_total - data.disk_used).toFixed(2)} GB</div>
+            `;
+        } else if(metric === "traffic") {
+            const totalTraffic = data.net_sent_mb + data.net_recv_mb;
+            chartData = {
+                labels: ["入站流量", "出站流量", "剩余（假设1000MB）"],
+                datasets: [{data: [data.net_recv_mb, data.net_sent_mb, 1000 - totalTraffic], backgroundColor: ["#36b9cc","#f6c23e","#eaeaea"]}]
+            };
+            extraHtml = `
+                <div class="card-stat">入站: ${data.net_recv_mb} MB</div>
+                <div class="card-stat">出站: ${data.net_sent_mb} MB</div>
+                <div class="card-stat">总流量: ${totalTraffic.toFixed(2)} MB</div>
+            `;
+        }
+
+        if(!detailChart){
+            detailChart = new Chart(ctx,{
+                type: 'bar',
+                data: chartData,
+                options: {responsive:true, plugins:{legend:{display:true}}, scales:{y:{beginAtZero:true}}}
+            });
+        } else {
+            detailChart.data = chartData;
+            detailChart.update();
+        }
+
+        document.getElementById("extraInfo").innerHTML = extraHtml;
+    });
+}
+
+updateDetailChart();
+setInterval(updateDetailChart,10000);
+</script>
+
+{% endblock %}

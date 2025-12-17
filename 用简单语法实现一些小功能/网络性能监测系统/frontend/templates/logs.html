@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+body {
+    background-image: url('https://images.unsplash.com/photo-1762199715541-a42f25f48ecf?q=80&w=1475&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.logs-wrapper {
+    background-color: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.table th {
+    white-space: nowrap;
+}
+
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.page-numbers {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.range-buttons {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.range-buttons a {
+    text-decoration: none;
+}
+</style>
+
+<div class="logs-wrapper">
+    <h2 class="mb-4">📄 系统日志</h2>
+
+    <!-- 时间区间选择 -->
+    <div class="range-buttons">
+        <a href="?range=1h" class="btn btn-sm btn-outline-primary {% if current_range=='1h' %}active{% endif %}">最近 1 小时</a>
+        <a href="?range=24h" class="btn btn-sm btn-outline-primary {% if current_range=='24h' %}active{% endif %}">最近 24 小时</a>
+        <a href="?range=7d" class="btn btn-sm btn-outline-primary {% if current_range=='7d' %}active{% endif %}">最近 7 天</a>
+        <a href="?range=30d" class="btn btn-sm btn-outline-primary {% if current_range=='30d' %}active{% endif %}">最近 30 天</a>
+    </div>
+
+    <div class="table-responsive">
+
+        <div class="mb-3 text-end">
+    <a href="/logs/download?range={{ current_range }}" class="btn btn-primary">
+        ⬇️ 下载 JSON 日志
+    </a>
+</div>
+
+
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>IP / Host</th>
+                    <th>延迟 (ms)</th>
+                    <th>丢包率 (%)</th>
+                    <th>HTTP 响应 (ms)</th>
+                    <th>记录时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.host }}</td>
+                    <td>{{ log.latency_ms }}</td>
+                    <td>{{ log.packet_loss_percent }}</td>
+                    <td>{{ log.http_response_ms }}</td>
+                    <td>{{ log.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                </tr>
+                {% endfor %}
+                {% if logs|length == 0 %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">暂无日志数据</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-wrapper">
+        <!-- 上一页固定左边 -->
+        <div>
+            <a class="btn btn-outline-secondary {% if current_page <= 1 %}disabled{% endif %}" href="?range={{ current_range }}&page={{ current_page - 1 }}">上一页</a>
+        </div>
+
+        <!-- 中间页码 -->
+        <div class="page-numbers">
+            {% set start_page = current_page - 2 if current_page - 2 > 1 else 1 %}
+            {% set end_page = current_page + 2 if current_page + 2 < total_pages else total_pages %}
+
+            {% if start_page > 1 %}
+                <a class="btn btn-sm btn-outline-primary" href="?range={{ current_range }}&page=1">1</a>
+                {% if start_page > 2 %}
+                    <span class="btn btn-sm disabled">…</span>
+                {% endif %}
+            {% endif %}
+
+            {% for p in range(start_page, end_page + 1) %}
+                <a class="btn btn-sm btn-outline-primary {% if p == current_page %}active{% endif %}" href="?range={{ current_range }}&page={{ p }}">{{ p }}</a>
+            {% endfor %}
+
+            {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}
+                    <span class="btn btn-sm disabled">…</span>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-primary" href="?range={{ current_range }}&page={{ total_pages }}">{{ total_pages }}</a>
+            {% endif %}
+        </div>
+
+        <!-- 下一页固定右边 -->
+        <div>
+            <a class="btn btn-outline-secondary {% if current_page >= total_pages %}disabled{% endif %}" href="?range={{ current_range }}&page={{ current_page + 1 }}">下一页</a>
+        </div>
+    </div>
+
+    <!-- 跳转页码 -->
+    <div class="mt-3 d-flex justify-content-center">
+        <form class="d-flex gap-2" method="get" action="">
+            <input type="hidden" name="range" value="{{ current_range }}">
+            <input type="number" min="1" max="{{ total_pages }}" name="page" class="form-control" style="width:80px" placeholder="页码">
+            <button type="submit" class="btn btn-primary">跳转</button>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

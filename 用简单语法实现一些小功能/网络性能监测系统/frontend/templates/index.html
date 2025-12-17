@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* 首页背景图 */
+html, body {
+    background-image: url('https://images.unsplash.com/photo-1762199715541-a42f25f48ecf?q=80&w=1475&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.content-wrapper {
+    max-width: 1200px;
+    margin: 100px auto 50px;
+    padding: 30px;
+    border-radius: 15px;
+    background-color: rgba(255, 255, 255, 0.00);
+    backdrop-filter: blur(10px);
+}
+.page-header {
+    color: #fff;
+    text-shadow: 1px 1px 5px rgba(0,0,0,0.7);
+    margin-bottom: 40px;
+}
+.page-header img {
+    width: 60px;
+    height: 60px;
+}
+.card {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.3s;
+}
+.card:hover { transform: translateY(-5px); }
+canvas { max-height: 200px; }
+</style>
+
+<div class="content-wrapper text-center">
+    <div class="page-header mb-5">
+        <img src="https://img.icons8.com/?size=100&id=LI7ZEfjGOOdx&format=png&color=ffffff" alt="Dashboard Icon">
+        <h1 class="mt-3">网络性能监控系统</h1>
+        <p class="text-light">实时显示本机性能指标</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm" style="cursor:pointer;" onclick="window.location.href='/home_detail/memory'">
+                <div class="card-body">
+                    <img src="https://img.icons8.com/?size=100&id=CJKamPsJbe9G&format=png&color=000000"
+                         alt="Memory Icon" style="width:50px;height:50px;">
+                    <h5 class="card-title mt-2">内存占用率</h5>
+                    <canvas id="memoryChart"></canvas>
+                    <p id="memoryValue" class="mt-2 text-primary fw-bold"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm" style="cursor:pointer;" onclick="window.location.href='/home_detail/disk'">
+                <div class="card-body">
+                    <img src="https://img.icons8.com/?size=100&id=63804&format=png&color=000000"
+                         alt="Disk Icon" style="width:50px;height:50px;">
+                    <h5 class="card-title mt-2">磁盘使用率</h5>
+                    <canvas id="diskChart"></canvas>
+                    <p id="diskValue" class="mt-2 text-success fw-bold"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm" style="cursor:pointer;" onclick="window.location.href='/home_detail/traffic'">
+                <div class="card-body">
+                    <img src="https://img.icons8.com/?size=100&id=81434&format=png&color=000000"
+                         alt="Traffic Icon" style="width:50px;height:50px;">
+                    <h5 class="card-title mt-2">当月流量使用</h5>
+                    <canvas id="trafficChart"></canvas>
+                    <p id="trafficValue" class="mt-2 text-info fw-bold"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let memoryChart, diskChart, trafficChart;
+
+function updateHomeCharts() {
+    fetch("/api/home_metrics")
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("memoryValue").innerText = data.memory_percent + "%";
+        document.getElementById("diskValue").innerText = data.disk_percent + "%";
+        document.getElementById("trafficValue").innerText = data.total_traffic_mb + " MB";
+
+        const memoryCtx = document.getElementById("memoryChart").getContext("2d");
+        if(!memoryChart){
+            memoryChart = new Chart(memoryCtx, {
+                type: 'doughnut',
+                data: { labels:["已用","剩余"], datasets:[{data:[data.memory_percent,100-data.memory_percent], backgroundColor:["#4e73df","#eaeaea"]}] }
+            });
+        } else {
+            memoryChart.data.datasets[0].data = [data.memory_percent,100-data.memory_percent];
+            memoryChart.update();
+        }
+
+        const diskCtx = document.getElementById("diskChart").getContext("2d");
+        if(!diskChart){
+            diskChart = new Chart(diskCtx, {
+                type: 'doughnut',
+                data: { labels:["已用","剩余"], datasets:[{data:[data.disk_percent,100-data.disk_percent], backgroundColor:["#1cc88a","#eaeaea"]}] }
+            });
+        } else {
+            diskChart.data.datasets[0].data = [data.disk_percent,100-data.disk_percent];
+            diskChart.update();
+        }
+
+        const trafficCtx = document.getElementById("trafficChart").getContext("2d");
+        if(!trafficChart){
+            trafficChart = new Chart(trafficCtx, {
+                type: 'doughnut',
+                data: { labels:["已用","剩余"], datasets:[{data:[data.total_traffic_mb,1000-data.total_traffic_mb], backgroundColor:["#36b9cc","#eaeaea"]}] }
+            });
+        } else {
+            trafficChart.data.datasets[0].data = [data.total_traffic_mb,1000-data.total_traffic_mb];
+            trafficChart.update();
+        }
+    });
+}
+
+updateHomeCharts();
+setInterval(updateHomeCharts,10000);
+</script>
+{% endblock %}
